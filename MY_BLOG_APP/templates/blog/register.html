@@ -1,19 +1,140 @@
 {% extends 'blog/base.html' %}
+
 {% block title %}Register{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-5">
-        <div class="card shadow p-4">
-            <h3 class="mb-3">Register</h3>
-            <form method="POST">
-                {% csrf_token %}
-                <input name="username" class="form-control mb-3" placeholder="Username" required>
-                <input type="password" name="password" class="form-control mb-3" placeholder="Password" required>
-                <input type="password" name="confirm_password" class="form-control mb-3" placeholder="Confirm Password" required>
-                <button class="btn btn-success w-100">Register</button>
-            </form>
+    <div class="col-md-6 col-lg-5">
+
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+
+                <h3 class="text-center mb-4">Create Account</h3>
+
+                <form method="POST">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" name="username" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input
+                            type="password"
+                            name="password"
+                            id="password"
+                            class="form-control"
+                            required
+                            onkeyup="checkPasswordStrength(); validatePasswords();"
+                        >
+                        <small id="passwordHelp" class="form-text"></small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Confirm Password</label>
+                        <input
+                            type="password"
+                            name="confirm_password"
+                            id="confirm_password"
+                            class="form-control"
+                            required
+                            onkeyup="validatePasswords()"
+                        >
+                        <small id="confirmHelp" class="form-text"></small>
+                    </div>
+
+                    <button
+                        type="submit"
+                        id="registerBtn"
+                        class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2"
+                        disabled
+                    >
+                        <span id="registerText">Register & Verify Email</span>
+                        <span
+                            id="registerSpinner"
+                            class="spinner-border spinner-border-sm d-none"
+                            role="status"
+                            aria-hidden="true"
+                        ></span>
+                    </button>
+
+                </form>
+
+                <p class="text-center mt-3 mb-0">
+                    Already have an account?
+                    <a href="{% url 'MY_BLOG_APP:login-page' %}">Login</a>
+                </p>
+
+            </div>
         </div>
+
     </div>
 </div>
+
+<script>
+function checkPasswordStrength() {
+    const password = document.getElementById("password").value;
+    const helpText = document.getElementById("passwordHelp");
+
+    if (password.length === 0) {
+        helpText.textContent = "";
+        return;
+    }
+
+    if (password.length < 6) {
+        helpText.textContent = "Weak password (minimum 6 characters)";
+        helpText.className = "text-danger";
+    } else if (!/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
+        helpText.textContent = "Medium strength (add an uppercase letter)";
+        helpText.className = "text-warning";    
+    } else if ( !/[0-9]/.test(password)) {
+        helpText.textContent = "Medium strength (add a number)";
+        helpText.className = "text-warning";
+    } else {
+        helpText.textContent = "Strong password 💪";
+        helpText.className = "text-success";
+    }
+}
+
+function validatePasswords() {
+    const password = document.getElementById("password").value;
+    const confirm = document.getElementById("confirm_password").value;
+    const helpText = document.getElementById("confirmHelp");
+    const btn = document.getElementById("registerBtn");
+
+    if (confirm.length === 0) {
+        helpText.textContent = "";
+        btn.disabled = true;
+        return;
+    }
+
+    if (password === confirm) {
+        helpText.textContent = "Passwords match ✔";
+        helpText.className = "text-success";
+        btn.disabled = false;
+    } else {
+        helpText.textContent = "Passwords do not match";
+        helpText.className = "text-danger";
+        btn.disabled = true;
+    }
+}
+
+const registerForm = document.querySelector("form");
+    const registerBtn = document.getElementById("registerBtn");
+    const registerText = document.getElementById("registerText");
+    const registerSpinner = document.getElementById("registerSpinner");
+
+    registerForm.addEventListener("submit", () => {
+        registerBtn.disabled = true;
+        registerSpinner.classList.remove("d-none");
+        registerText.textContent = "Sending OTP...";
+    });
+</script>
 {% endblock %}

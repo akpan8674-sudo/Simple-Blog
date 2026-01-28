@@ -1,8 +1,10 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Post, Comment
+from .models import Post, Comment, EmailOTP
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
+from django.core.mail import send_mail
+from .utils import generate_otp
 
 # Create your views here.
 
@@ -11,9 +13,10 @@ def home(request):
     context = {'posts': allPosts}
     return render(request, 'blog/home.html', context)
 
-def register (request):
+def register(request):
     if request.method == "POST":
         username = request.POST.get('username')
+        email = request.POST.get('email')
         password = request.POST.get('password')
         confirm_password = request.POST.get('confirm_password')
 
@@ -21,17 +24,65 @@ def register (request):
             messages.error(request, "Passwords do not match.")
             return redirect('MY_BLOG_APP:register-page')
 
-        User_check = User.objects.filter(username=username).first()
-        if User_check:
+        if User.objects.filter(username=username).exists():
             messages.error(request, "Username already exists.")
             return redirect('MY_BLOG_APP:register-page')
 
-        user = User.objects.create_user(username=username, password=password)
-        user.save()
-        messages.success(request, "Registration successful. You can now log in.")
-        return redirect('MY_BLOG_APP:login-page')
+        if User.objects.filter(email=email).exists():
+            messages.error(request, "Email already exists.")
+            return redirect('MY_BLOG_APP:register-page')
 
+        user = User.objects.create_user(username=username, email=email, password=password, is_active=False)
+        user.save()
+
+        # send OTP
+        otp = generate_otp()
+        EmailOTP.objects.filter(email=email).delete()
+        EmailOTP.objects.create(email=email, otp=otp)
+
+        send_mail(
+            "Verify your email",
+            f"Your OTP is {otp}. It expires in 5 minutes.",
+            "iniukomorrison101@gmail.com",
+            [email],
+            fail_silently=False
+        )
+
+        request.session['otp_email'] = email
+        messages.success(request, "OTP sent to your email.")
+        return redirect('MY_BLOG_APP:verify-otp')
     return render(request, 'blog/register.html')
+
+
+def verify_otp(request):
+    if request.method == "POST":
+        otp_input = request.POST.get('otp')
+        email = request.session.get('otp_email')
+
+        try:
+            otp_obj = EmailOTP.objects.filter(email=email, is_verified=False).latest('created_at') 
+        except EmailOTP.DoesNotExist:
+            return render(request, 'blog/verify_otp.html', {'error': 'OTP not found'})
+
+        if otp_obj.is_expired():
+            return render(request, 'blog/verify_otp.html', {'error': 'OTP expired'})
+                
+        if otp_input == otp_obj.otp:
+            otp_obj.is_verified = True
+            otp_obj.save()
+
+            # ✅ Activate user
+            user = User.objects.get(email=email)
+            user.is_active = True
+            user.save()
+
+            messages.success(request, "Email verified. You can now log in.")
+            return redirect('MY_BLOG_APP:login-page')
+
+        return render(request, 'blog/verify_otp.html', {'error': 'Invalid OTP'})
+
+
+    return render(request, 'blog/verify_otp.html')
 
 def login_page(request):
     if request.method == "POST":
@@ -40,9 +91,14 @@ def login_page(request):
 
         user = authenticate(request, username=username, password=password)
         if user is not None:
+            if not user.is_active:
+                messages.error(request, "Please Verify your Email First")
+                return redirect('MY_BLOG_APP:login-page')
+
             login(request, user)
             messages.success(request, "Login successful.")
             return redirect('MY_BLOG_APP:home')
+       
         else:
             messages.error(request, "Invalid credentials.")
             return redirect('MY_BLOG_APP:login-page')
@@ -124,7 +180,8 @@ def delete_comment(request, comment_id):
     messages.success(request, "Comment deleted successfully.")
     return redirect('MY_BLOG_APP:home')
 
-def logout(request):
+def logout_page(request):
     logout(request)
     messages.success(request, "You have been logged out.")
     return redirect('MY_BLOG_APP:home')
+

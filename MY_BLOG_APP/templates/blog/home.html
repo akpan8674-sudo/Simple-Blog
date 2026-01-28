@@ -2,25 +2,70 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
+<style>
+    /* HERO */
+    .hero {
+        background: linear-gradient(135deg, #f8f9fa, #eef1f5);
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+        animation: fadeIn 0.6s ease;
+    }
+
+    .hero h1 span {
+        color: #0d6efd;
+    }
+
+    /* POST CARDS */
+    .post-card {
+        border-radius: 16px;
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .post-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 16px 32px rgba(0,0,0,0.12);
+    }
+
+    .post-meta {
+        font-size: 0.85rem;
+    }
+
+    /* EMPTY STATE */
+    .empty-state {
+        border-radius: 14px;
+        animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(15px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
 
 <!-- HERO SECTION -->
-<div class="p-5 mb-5 rounded-3 bg-light border">
+<div class="hero p-5 mb-5">
     <div class="container-fluid py-4">
-        <h1 class="display-5 fw-bold">Welcome to My Blog</h1>
+        <h1 class="display-5 fw-bold">
+            Welcome to <span>My Blog</span>
+        </h1>
+
         <p class="col-md-8 fs-5 text-muted">
-            Read, write, and share meaningful posts from our community.
+            Read, write, and share meaningful stories with a growing community.
         </p>
 
         {% if not user.is_authenticated %}
-            <a href="{% url 'MY_BLOG_APP:login-page' %}" class="btn btn-primary btn-lg me-2">
+            <a href="{% url 'MY_BLOG_APP:login-page' %}"
+               class="btn btn-primary btn-lg me-2">
                 Login
             </a>
-            <a href="{% url 'MY_BLOG_APP:register-page' %}" class="btn btn-outline-secondary btn-lg">
+            <a href="{% url 'MY_BLOG_APP:register-page' %}"
+               class="btn btn-outline-secondary btn-lg">
                 Register
             </a>
         {% else %}
-            <a href="{% url 'MY_BLOG_APP:create-post' %}" class="btn btn-success btn-lg">
-                Create a Post
+            <a href="{% url 'MY_BLOG_APP:create-post' %}"
+               class="btn btn-success btn-lg">
+                ✍ Create a Post
             </a>
         {% endif %}
     </div>
@@ -33,23 +78,26 @@
     <div class="row">
         {% for post in posts %}
             <div class="col-md-6 col-lg-4 mb-4">
-                <div class="card h-100 shadow-sm border-0">
+                <div class="card post-card h-100 border-0 shadow-sm">
                     <div class="card-body d-flex flex-column">
 
-                        <h5 class="card-title">{{ post.title }}</h5>
+                        <h5 class="card-title fw-semibold">
+                            {{ post.title }}
+                        </h5>
 
-                        <small class="text-muted mb-2">
-                            By {{ post.author }} · {{ post.created_at }}
+                        <small class="text-muted post-meta mb-2">
+                            By <strong>{{ post.author }}</strong>
+                            · {{ post.created_at|date:"M d, Y" }}
                         </small>
 
                         <p class="card-text text-muted">
-                            {{ post.content|truncatewords:20 }}
+                            {{ post.content|truncatewords:22 }}
                         </p>
 
                         <div class="mt-auto">
                             <a href="{% url 'MY_BLOG_APP:view-post' post.id %}"
                                class="btn btn-sm btn-outline-primary">
-                                Read More
+                                Read More →
                             </a>
                         </div>
 
@@ -57,16 +105,20 @@
                 </div>
             </div>
         {% empty %}
-            <p>No posts yet.</p>
+            <div class="col-12">
+                <div class="alert alert-secondary text-center empty-state fs-5">
+                    No posts yet. Be the first to write one ✨
+                </div>
+            </div>
         {% endfor %}
     </div>
 {% else %}
-    <div class="alert alert-info fs-5">
+    <div class="alert alert-info fs-5 empty-state">
         Please
         <a href="{% url 'MY_BLOG_APP:login-page' %}">login</a>
         or
         <a href="{% url 'MY_BLOG_APP:register-page' %}">register</a>
-        to view the latest posts.
+        to explore the latest posts.
     </div>
 {% endif %}
 
